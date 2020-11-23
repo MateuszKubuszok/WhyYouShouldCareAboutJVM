@@ -1,28 +1,180 @@
-= Title Slide
+= Why You Should Care About JVM
 
-== Slide One
+
+
+
+// --------------------------------- About me ---------------------------------
+
+== About me
+
+TODO
+
+
+
+== Plan
 
 [%step]
-* Foo
-* Bar
-* World
-
-== Slide Two
-
-Hello World - Good Bye Cruel World
+* What is JVM
+* JVM types vs Scala types
+* Threads
+* Optimizations
+* Tooling
 
 [NOTE.speaker]
 --
-Actually things aren't that bad
+Stress that we're gonna just scratch the surface.
 --
+
+
+
+// ------------------------------- What is JVM --------------------------------
+
+== What is JVM
+
+=== Nomenclature
+
+[%step]
+ * Virtual Machine
+ * Local variables
+ * Stack
+ * Call
+
+=== How bytecode works
+
+TODO: picture #1 - put local variables on stack
+
+=== How bytecode works
+
+TODO: picture #2 - show variables on stack
+
+=== How bytecode works
+
+TODO: picture #3 - call
+
+=== How bytecode works
+
+TODO: picture #3 - call
+
+=== Primitive types vs Reference types
+
+TODO: picture #4 - primitives and reference types
+
+[NOTE.speaker]
+--
+Primitives have all the information in one place, reference types can be null and needs to be dereferenced.
+--
+
+=== Stack traces
+
+TODO: picture #5 - each frame has local variables from call above
+
+=== Static vs dynamic calls
 
 == Source code
 
 [source, scala]
 --
-val test = task
-  .map(identity)
-  .flatMap(a => Something(b))
-  .runSyncUnsafe
-  // result
+// TODO: some example
 --
+
+
+
+// ------------------------ JVM types vs Scala types --------------------------
+
+== JVM types vs Scala types
+
+=== Scala type hierarchy
+
+TODO: picture #6 - graph
+
+=== Java type hierarchy
+
+TODO: picture #7 - graph
+
+=== Comparison
+
+TODO: both type systems
+
+=== AnyVals
+
+TODO
+
+[NOTE.speaker]
+--
+AnyVals, java.lang.Number, scala.Numeric
+--
+
+=== Generics
+
+TODO
+
+[NOTE.speaker]
+--
+Type erasure
+--
+
+
+
+// -------------------------------- Threads -----------------------------------
+
+== Threads
+
+TODO: maps directly into system threads
+
+=== synchronized, wait, notify
+
+TODO
+
+[NOTE.speaker]
+--
+blocking, mutexes
+--
+
+=== Threads pools
+
+TODO
+
+[NOTE.speaker]
+--
+ExecutionContext, Scheduler
+--
+
+
+
+// ----------------------------- Optimizations --------------------------------
+
+== Optimizations
+
+[NOTE.speaker]
+--
+JVM does them
+--
+
+=== Compilers
+
+TODO: C1, C2 interpreter
+
+=== Examples
+
+TODO
+
+=== Some rules
+
+TODO when optimization won't work
+
+=== TODO
+
+TODO image from deep stack on JEE/Springś 
+
+
+
+// -------------------------------- Tooling -----------------------------------
+
+== Tooling
+
+TODO (depending on time left)
+
+
+// -------------------------------- Summary -----------------------------------
+
+== Summary
