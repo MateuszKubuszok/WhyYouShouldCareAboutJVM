@@ -46,3 +46,14 @@ table {
 	border-collapse: collapse;
 	border-spacing: 0;
 }
+
+.handle-img {
+	margin: 0 auto !important;
+	width: 50%;
+}
+.handle-img img {
+	background-color: white !important;
+}
+.rotate-img {
+	transform: rotate(90deg);
+}

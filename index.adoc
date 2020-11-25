@@ -1,4 +1,5 @@
 = Why You Should Care About JVM
+:linkcss:
 
 
 
@@ -7,8 +8,11 @@
 
 == About me
 
-TODO
-
+[%step]
+* Scala developer for 5 years
+* blogger - kubuszok.com
+* ebook author - Things you need to know about JVM (that matter in Scala)
+* OSS - scalaland.io
 
 
 == Plan
@@ -18,7 +22,6 @@ TODO
 * JVM types vs Scala types
 * Threads
 * Optimizations
-* Tooling
 
 [NOTE.speaker]
 --
@@ -31,52 +34,315 @@ Stress that we're gonna just scratch the surface.
 
 == What is JVM
 
-=== Nomenclature
+=== Let's see by example
 
-[%step]
- * Virtual Machine
- * Local variables
- * Stack
- * Call
+[source, scala]
+--
+object Test {
 
-=== How bytecode works
-
-TODO: picture #1 - put local variables on stack
-
-=== How bytecode works
-
-TODO: picture #2 - show variables on stack
-
-=== How bytecode works
-
-TODO: picture #3 - call
-
-=== How bytecode works
-
-TODO: picture #3 - call
-
-=== Primitive types vs Reference types
-
-TODO: picture #4 - primitives and reference types
+  def main(args: Array[String]): Unit = {
+    val a = 1
+    val b = 2
+    val c = a + b
+    println(c)
+  }
+}
+--
 
 [NOTE.speaker]
 --
-Primitives have all the information in one place, reference types can be null and needs to be dereferenced.
+Let's see how Java version would look like.
+--
+
+=== Let's see by example
+
+[source, java]
+--
+class Test {
+
+  public static void main(String[] args) {
+    int a = 1;
+    int b = 2;
+    int c = a + b;
+    scala.Predef$.MODULE.println(
+      scala.runtime.BoxRunTime.boxToInteger(c)
+    );
+  }
+}
+--
+
+[NOTE.speaker]
+--
+`println` is imported from `scala.Predef`.
+`MODULE` stores an instance of `scala.Predef`.
+`println` doesn't take ints so they have to be converted. 
+Now, lets see how bytecode would look like.
+--
+
+=== Let's see by example
+
+[source, x86asm]
+--
+0: iconst_1
+1: istore_2
+2: iconst_2
+3: istore_3
+4: iload_2
+5: iload_3
+6: iadd
+7: istore 4
+9: getstatic #22; scala.Predef$.MODULE$ : scala.Predef$;
+12: iload 4
+14: invokestatic #28 ; scala.runtime.BoxesRunTime.boxToInteger(int): java.lang.Integer;
+17: invokevirtual #32 ; scala.Predef$.println(java.lang.Object): void
+--
+
+[NOTE.speaker]
+--
+This looks intimidating so let's draw it on a piece of paper.
+At first the additon part.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 5.png[]
+
+[NOTE.speaker]
+--
+We have list of instructions on left, variables are using numbers, so compiler translates each name to a distinct number. In order to execute some instruction we'll use stacks to pass things around.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 6.png[]
+
+[NOTE.speaker]
+--
+Push const 1 on stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 7.png[]
+
+[NOTE.speaker]
+--
+Load value from top of the stack to variable 2.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 8.png[]
+
+[NOTE.speaker]
+--
+Push const 2 on stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 9.png[]
+
+[NOTE.speaker]
+--
+Load value from top of the stack to variable 3.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 10.png[]
+
+[NOTE.speaker]
+--
+Push value from variable 2 on stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 11.png[]
+
+[NOTE.speaker]
+--
+Push value from variable 3 on stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 12.png[]
+
+[NOTE.speaker]
+--
+Take 2 values from top of the stack, add them, and push the result on the top of the stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 13.png[]
+
+[NOTE.speaker]
+--
+Load value from top of the stack to variable 4.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 14.png[]
+
+[NOTE.speaker]
+--
+We finished the addition part, so small reminder where we are in the original code.
+--
+
+[transition=none]
+=== Reminder
+
+[source, java]
+--
+class Test {
+
+  public static void main(String[] args) {
+    int a = 1;
+    int b = 2;
+    int c = a + b;
+    // we finished here
+    scala.Predef$.MODULE.println(
+      scala.runtime.BoxRunTime.boxToInteger(c)
+    );
+  }
+}
+--
+
+[NOTE.speaker]
+--
+So, why println doesn't accept `int`?
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 4.png[]
+
+[NOTE.speaker]
+--
+Primitives - basically boolean and numbers.
+References - everything else.
+Void - lack of returned value which has a special treatment.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 15.png[]
+
+
+[NOTE.speaker]
+--
+Get the value of static field and put it on the top of the stack.
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 16.png[]
+
+[NOTE.speaker]
+--
+Push value of variable 4 to the top of the stack. 
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 17.png[]
+
+[NOTE.speaker]
+--
+Invoke static method taking arguments from the stack and put result on the stack. 
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 18.png[]
+
+[NOTE.speaker]
+--
+Invoke virtual method taking arguments (inluding objects that we invoke the method on) from the stack and put result on the stack. 
+--
+
+[transition=none]
+=== How bytecode works
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 19.png[]
+
+[NOTE.speaker]
+--
+The calls were quite interesting so let's stop for a minute.
+--
+
+=== Calls and returns
+
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 20.png[]
+
+[NOTE.speaker]
+--
+The calls were quite interesting so let's stop for a minute. Static calls take only arguments, virtual take also object (because method might be polymorphic).
 --
 
 === Stack traces
 
-TODO: picture #5 - each frame has local variables from call above
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 21.png[]
 
-=== Static vs dynamic calls
-
-== Source code
-
-[source, scala]
+[NOTE.speaker]
 --
-// TODO: some example
+All we had before - which method we are in, program counter, local variables, operand stack - live inside a `Frame`. When we make a call we create a new Frame and when we return we destroy the current one and return to immediate previous `Frame`.
 --
-
 
 
 // ------------------------ JVM types vs Scala types --------------------------
@@ -85,32 +351,71 @@ TODO: picture #5 - each frame has local variables from call above
 
 === Scala type hierarchy
 
-TODO: picture #6 - graph
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 3.png[]
+
+[NOTE.speaker]
+--
+We have a top type and a bottom type. Unit is a normal type with a value. While Scala distinguishes between primitive types and reference types, it is most of the time transparent to us.
+--
 
 === Java type hierarchy
 
-TODO: picture #7 - graph
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 4.png[]
+
+[NOTE.speaker]
+--
+Primitives are special. Void is special. There is no bottom type. There are function that would not compose, e.g. everything returning void. Suppliers (no arguments), Consumers (no returns).
+--
 
 === Comparison
 
-TODO: both type systems
-
-=== AnyVals
-
-TODO
+[%step]
+* `scala.AnyVal` s are automatically compiled to primitives OR boxed if needed, so they are dscribed using separate types
+* there is `scala.Null` subtype of all references
+* there is `scala.Nothing` subtype of all types
 
 [NOTE.speaker]
 --
-AnyVals, java.lang.Number, scala.Numeric
+A few more words about numbers.
 --
+
+=== A bit more about numbers
+
+[%step]
+* JVM primitives are separate types with no common sub- or supertype
+* however they can be boxed with subclasses of `java.lang.Number` to share an interface
+* Scala's numbers share `AnyVal` which has no common numeric methods, so instead we rely on `scala.Numeric` type class
 
 === Generics
 
-TODO
+[source, scala]
+--
+// what we see
+
+def head[A](nel: NonEmptyList[A]): A = ...
+
+val value: String = head(stringNel)
+--
+
+[source, scala]
+--
+// pseudocode of what JVM sees
+
+// List can only contain java.lang.Object
+def head(list: List): java.lang.Object = ...
+
+// stringNel forgot its type parameter so we have to retrieve it
+val value: String = headOption(stringNel).asInstanceOf[String]
+--
 
 [NOTE.speaker]
 --
-Type erasure
+Type erasure instead of reified types, they are actually useful because it allows us to implement things that Java's type system wouldn't allow.
+Drawbacks are usually addressed with `@specialize`. Exception is reflection.
 --
 
 
@@ -147,12 +452,19 @@ ExecutionContext, Scheduler
 
 [NOTE.speaker]
 --
-JVM does them
+If JVM was only emulator of non-existend processor it would be pretty slow. However that's not the case. How it's possible?
 --
 
 === Compilers
 
-TODO: C1, C2 interpreter
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 23.png[]
+
+[NOTE.speaker]
+--
+`-XX:MaxTrivialSize=6`, `-XX:MaxInlineSize=35`, `-FreqInlineSize=325` (bytes), there are limits on inlining `-XX:MaxInlineLevel=9`, `-XX:InlineSmallCode=1000`.
+--
 
 === Examples
 
@@ -167,12 +479,6 @@ TODO when optimization won't work
 TODO image from deep stack on JEE/Springś 
 
 
-
-// -------------------------------- Tooling -----------------------------------
-
-== Tooling
-
-TODO (depending on time left)
 
 
 // -------------------------------- Summary -----------------------------------
