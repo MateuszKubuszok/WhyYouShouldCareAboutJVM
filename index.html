@@ -154,7 +154,9 @@ TeX: { equationNumbers: { autoNumber: "none" } }
 link.rel = 'stylesheet';
 link.type = 'text/css';
 link.href = window.location.search.match( /print-pdf/gi ) ? "./css/print/pdf.css" : "./css/print/paper.css";
-document.getElementsByTagName( 'head' )[0].appendChild( link );</script></head><body><div class="reveal"><div class="slides"><section class="title" data-state="title"><h1>Why You Should Care About JVM</h1></section><section id="_about_me"><h2>About me</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>Scala developer for 5 years</p></li><li class="fragment"><p>blogger - kubuszok.com</p></li><li class="fragment"><p>ebook author - Things you need to know about JVM (that matter in Scala)</p></li><li class="fragment"><p>OSS - scalaland.io</p></li></ul></div></div></section>
+document.getElementsByTagName( 'head' )[0].appendChild( link );</script></head><body><div class="reveal"><div class="slides"><section class="title" data-state="title"><h1>Why You Should Care About JVM</h1><div class="preamble"><div class="paragraph"><p>Mateusz Kubuszok</p></div></div></section>
+<section id="_about_me"><h2>About me</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>Scala developer for 5 years</p></li><li class="fragment"><p>blogger - kubuszok.com</p></li><li class="fragment"><p>ebook author - Things you need to know about JVM (that matter in Scala)</p></li><li class="fragment"><p>OSS - scalaland.io</p></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Mention Krzemin at OSS.</p></div></aside></div></section>
 <section id="_plan"><h2>Plan</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>What is JVM</p></li><li class="fragment"><p>JVM types vs Scala types</p></li><li class="fragment"><p>Threads</p></li><li class="fragment"><p>Optimizations</p></li></ul></div>
 <aside class="notes"><div class="paragraph"><p>Stress that we&#8217;re gonna just scratch the surface.</p></div></aside></div></section>
 <section><section id="_what_is_jvm"><h2>What is JVM</h2></section><section id="_lets_see_by_example"><h2>Let&#8217;s see by example</h2><div class="slide-content"><div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">object Test {
@@ -172,7 +174,7 @@ document.getElementsByTagName( 'head' )[0].appendChild( link );</script></head><
     int a = 1;
     int b = 2;
     int c = a + b;
-    scala.Predef$.MODULE.println(
+    scala.Predef$.MODULE$.println(
       scala.runtime.BoxRunTime.boxToInteger(c)
     );
   }
@@ -180,18 +182,20 @@ document.getElementsByTagName( 'head' )[0].appendChild( link );</script></head><
 <aside class="notes"><div class="paragraph"><p><code>println</code> is imported from <code>scala.Predef</code>.
 <code>MODULE</code> stores an instance of <code>scala.Predef</code>.
 <code>println</code> doesn&#8217;t take ints so they have to be converted.
-Now, lets see how bytecode would look like.</p></div></aside></div></section><section id="_lets_see_by_example_3"><h2>Let&#8217;s see by example</h2><div class="slide-content"><div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="x86asm" class="language-x86asm hljs" data-noescape="true">0: iconst_1
-1: istore_2
-2: iconst_2
-3: istore_3
-4: iload_2
-5: iload_3
-6: iadd
-7: istore 4
-9: getstatic #22; scala.Predef$.MODULE$ : scala.Predef$;
+Now, lets see how bytecode would look like.</p></div></aside></div></section><section id="_lets_see_by_example_3"><h2>Let&#8217;s see by example</h2><div class="slide-content"><div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="x86asm" class="language-x86asm hljs" data-noescape="true"> 0: iconst_1
+ 1: istore_2
+ 2: iconst_2
+ 3: istore_3
+ 4: iload_2
+ 5: iload_3
+ 6: iadd
+ 7: istore 4
+ 9: getstatic #22; scala.Predef$.MODULE$ : scala.Predef$
 12: iload 4
-14: invokestatic #28 ; scala.runtime.BoxesRunTime.boxToInteger(int): java.lang.Integer;
-17: invokevirtual #32 ; scala.Predef$.println(java.lang.Object): void</code></pre></div></div>
+14: invokestatic #28 ; scala.runtime.BoxesRunTime
+                     ; .boxToInteger(int): java.lang.Integer
+17: invokevirtual #32
+; scala.Predef$.println(java.lang.Object): void</code></pre></div></div>
 <aside class="notes"><div class="paragraph"><p>This looks intimidating so let&#8217;s draw it on a piece of paper.
 At first the additon part.</p></div></aside></div></section><section id="_how_bytecode_works" data-transition="none"><h2>How bytecode works</h2><div class="slide-content"><div class="imageblock handle-img rotate-img" style=""><img src="Scala%20and%20JVM/Scala%20and%20JVM%20-%20page%205.png" alt="Scala and JVM   page 5"></div>
 <aside class="notes"><div class="paragraph"><p>We have list of instructions on left, variables are using numbers, so compiler translates each name to a distinct number. In order to execute some instruction we&#8217;ll use stacks to pass things around.</p></div></aside></div></section><section id="_how_bytecode_works_2" data-transition="none"><h2>How bytecode works</h2><div class="slide-content"><div class="imageblock handle-img rotate-img" style=""><img src="Scala%20and%20JVM/Scala%20and%20JVM%20-%20page%206.png" alt="Scala and JVM   page 6"></div>
@@ -210,7 +214,7 @@ At first the additon part.</p></div></aside></div></section><section id="_how_by
     int b = 2;
     int c = a + b;
     // we finished here
-    scala.Predef$.MODULE.println(
+    scala.Predef$.MODULE$.println(
       scala.runtime.BoxRunTime.boxToInteger(c)
     );
   }
@@ -237,18 +241,45 @@ val value: String = head(stringNel)</code></pre></div></div>
 <div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">// pseudocode of what JVM sees
 
 // List can only contain java.lang.Object
-def head(list: List): java.lang.Object = ...
+def head(list: NonEmptyList): java.lang.Object = ...
 
-// stringNel forgot its type parameter so we have to retrieve it
-val value: String = headOption(stringNel).asInstanceOf[String]</code></pre></div></div>
+// stringNel forgot its type parameter
+val value: String = headOption(stringNel)
+    .asInstanceOf[String] // so we have to retrieve it</code></pre></div></div>
 <aside class="notes"><div class="paragraph"><p>Type erasure instead of reified types, they are actually useful because it allows us to implement things that Java&#8217;s type system wouldn&#8217;t allow.
-Drawbacks are usually addressed with <code>@specialize</code>. Exception is reflection.</p></div></aside></div></section></section>
-<section><section id="_threads"><h2>Threads</h2><div class="slide-content"><div class="paragraph"><p>TODO: maps directly into system threads</p></div></div></section><section id="_synchronized_wait_notify"><h2>synchronized, wait, notify</h2><div class="slide-content"><div class="paragraph"><p>TODO</p></div>
-<aside class="notes"><div class="paragraph"><p>blocking, mutexes</p></div></aside></div></section><section id="_threads_pools"><h2>Threads pools</h2><div class="slide-content"><div class="paragraph"><p>TODO</p></div>
-<aside class="notes"><div class="paragraph"><p>ExecutionContext, Scheduler</p></div></aside></div></section></section>
-<section><section id="_optimizations"><h2>Optimizations</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>If JVM was only emulator of non-existend processor it would be pretty slow. However that&#8217;s not the case. How it&#8217;s possible?</p></div></aside></div></section><section id="_compilers"><h2>Compilers</h2><div class="slide-content"><div class="imageblock handle-img rotate-img" style=""><img src="Scala%20and%20JVM/Scala%20and%20JVM%20-%20page%2023.png" alt="Scala and JVM   page 23"></div>
-<aside class="notes"><div class="paragraph"><p><code>-XX:MaxTrivialSize=6</code>, <code>-XX:MaxInlineSize=35</code>, <code>-FreqInlineSize=325</code> (bytes), there are limits on inlining <code>-XX:MaxInlineLevel=9</code>, <code>-XX:InlineSmallCode=1000</code>.</p></div></aside></div></section><section id="_examples"><h2>Examples</h2><div class="slide-content"><div class="paragraph"><p>TODO</p></div></div></section><section id="_some_rules"><h2>Some rules</h2><div class="slide-content"><div class="paragraph"><p>TODO when optimization won&#8217;t work</p></div></div></section><section id="_todo"><h2>TODO</h2><div class="slide-content"><div class="paragraph"><p>TODO image from deep stack on JEE/Springś</p></div></div></section></section>
-<section id="_summary"><h2>Summary</h2></section></div></div><script src="./js/reveal.js"></script><script>Array.prototype.slice.call(document.querySelectorAll('.slides section')).forEach(function(slide) {
+Drawbacks are usually addressed with <code>@specialize</code>. Exception is reflection which might be difficult to use with generic methods.</p></div></aside></div></section></section>
+<section><section id="_threads"><h2>Threads</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>Natively supported since JDK 1.0, released at January 23, 1996.</p></div></aside></div></section><section id="_in_application"><h2>In application</h2><div class="slide-content"><div class="imageblock handle-img rotate-img" style=""><img src="Scala%20and%20JVM/Scala%20and%20JVM%20-%20page%2022.png" alt="Scala and JVM   page 22"></div>
+<aside class="notes"><div class="paragraph"><p>Map to operating system threads. Are expensice to create so we should try to reuse them instead of creating them anew.</p></div></aside></div></section><section id="_creating_a_thread"><h2>Creating a thread</h2><div class="slide-content"><div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">// nothing interesting
+val thread = new Thread()
+thread.start()</code></pre></div></div>
+<div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">// passing Runnable
+val thread = new Thread(() =&gt; println("started"))
+thread.start()</code></pre></div></div>
+<div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">// extending Thread
+val thread = new Thread {
+  override def run(): Unit = println("started")
+}
+thread.start()</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>Creating threads is that simple.</p></div></aside></div></section><section id="_thread_pools"><h2>Thread pools</h2><div class="slide-content"><div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">// 10 threads that could run submited tasks in parallel
+val executorService = Executors.newFixedThreadPool(10)
+executorService.submit(() =&gt; println("started"))</code></pre></div></div>
+<div class="listingblock"><div class="content"><pre class="highlightjs highlight"><code data-lang="scala" class="language-scala hljs" data-noescape="true">implicit val ec: ExecutionContext =
+    ExecutionContext.fromExecutor(executorService)
+// use in e.g. Future</code></pre></div></div>
+<aside class="notes"><div class="paragraph"><p>Thread pools let us reuse a thread, instead of letting it die after <code>Runnable</code> finishes.
+This is used by <code>Future</code>, <code>IO</code>, <code>Task</code>, Akka, etc to run things.
+<code>ExecutionContext</code> and <code>Scheduler</code> are just wrappers.
+Mention blocking threads, IO, and the need to handle that.</p></div></aside></div></section></section>
+<section><section id="_optimizations"><h2>Optimizations</h2><div class="slide-content"><aside class="notes"><div class="paragraph"><p>If JVM was only emulator of non-existend processor it would be pretty slow. However that&#8217;s not the case. How it&#8217;s possible? HotSpot.</p></div></aside></div></section><section id="_compilers"><h2>Compilers</h2><div class="slide-content"><div class="imageblock handle-img rotate-img" style=""><img src="Scala%20and%20JVM/Scala%20and%20JVM%20-%20page%2023.png" alt="Scala and JVM   page 23"></div>
+<aside class="notes"><div class="paragraph"><p><code>-XX:MaxTrivialSize=6</code>, <code>-XX:MaxInlineSize=35</code>, <code>-FreqInlineSize=325</code> (bytes), there are limits on inlining <code>-XX:MaxInlineLevel=9</code>, <code>-XX:InlineSmallCode=1000</code>.</p></div></aside></div></section><section id="_examples"><h2>Examples</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>inlining</p></li><li class="fragment"><p>loop unrooling</p></li><li class="fragment"><p>null check elimination</p></li><li class="fragment"><p>dead code elimination</p></li><li class="fragment"><p>escape analysis</p></li><li class="fragment"><p>devirtualization</p></li><li class="fragment"><p>constant folding</p></li><li class="fragment"><p>&#8230;&#8203;</p></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Inlining is the mother of all optimizations.
+Devirtualization relies on knowing how many implementations are in the runtime.</p></div></aside></div></section><section id="_some_takeaways"><h2>Some takeaways</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>JVM prefers short method (inlining and compilation)</p></li><li class="fragment"><p>JVM prefers not-too-deep call stack (ditto)</p></li><li class="fragment"><p>JVM perfers simple code (easier to optimize)</p></li><li class="fragment"><p>JVM prefers if we limit amount of implementations in the runtime (devirtualization &#8594; inlining)</p></li><li class="fragment"><p>a lot of optimizations we would do manually is aalredy done by JVM itself, so before doing anything - learn how to benchmark</p></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Deep hierarchies, refletion, Fabio Brazill&#8217;s example with Map.</p></div></aside></div></section><section id="_what_to_avoid"><h2>What to avoid</h2><div class="slide-content"><div class="imageblock handle-img" style=""><img src="jtrac-callstack1.png" alt="jtrac callstack1"></div>
+<div class="paragraph"><p>source: <a href="https://ptrthomas.wordpress.com/2006/06/06/java-call-stack-from-http-upto-jdbc-as-a-picture/">Peter Thomas</a></p></div></div></section></section>
+<section><section id="_summary"><h2>Summary</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p>you cannot escape from JVM&#8217;s idiosyncracies forever, so it&#8217;s better to understand it</p></li><li class="fragment"><p>even with FP libraires sometimes knowledge about low-level stuff is important</p></li><li class="fragment"><p>if you want to be able to optimize you program, you HAVE to learn some basics</p></li></ul></div></div></section><section id="_sources_for_curious"><h2>Sources for curious</h2><div class="slide-content"><div class="ulist"><ul><li class="fragment"><p><a href="https://docs.oracle.com/javase/specs/index.html">Oracle&#8217;s JVM specifications</a> (and Oracle&#8217;s documentation in general)</p></li><li class="fragment"><p>Daniel Spiewak&#8217;s gists about <a href="https://gist.github.com/djspiewak/46b543800958cf61af6efa8e072bfd5c">Thread Pools</a> and <a href="https://gist.github.com/djspiewak/464c11307cabc80171c90397d4ec34ef">Optimizing JVM</a></p></li><li class="fragment"><p>Aleksey Shipilëv&#8217;s <a href="https://shipilev.net/">blog</a></p></li><li class="fragment"><p>Fabio Labella&#8217;s presentation <a href="https://www.youtube.com/watch?v=x5_MmZVLiSM">How do Fibers Work? A Peek Under the Hood</a></p></li><li class="fragment"><p>my own <a href="https://leanpub.com/jvm-scala-book">book about JVM and Scala</a></p></li></ul></div>
+<aside class="notes"><div class="paragraph"><p>Slides will be published online after the conference.</p></div></aside></div></section></section>
+<section id="_questions"><h2>Questions?</h2></section>
+<section id="_thank_you"><h2>Thank you !</h2></section></div></div><script src="./js/reveal.js"></script><script>Array.prototype.slice.call(document.querySelectorAll('.slides section')).forEach(function(slide) {
   if (slide.getAttribute('data-background-color')) return;
   // user needs to explicitly say he wants CSS color to override otherwise we might break custom css or theme (#226)
   if (!(slide.classList.contains('canvas') || slide.classList.contains('background'))) return;

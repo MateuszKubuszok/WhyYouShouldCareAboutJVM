@@ -1,7 +1,7 @@
 = Why You Should Care About JVM
 :linkcss:
 
-
+Mateusz Kubuszok
 
 
 // --------------------------------- About me ---------------------------------
@@ -14,6 +14,10 @@
 * ebook author - Things you need to know about JVM (that matter in Scala)
 * OSS - scalaland.io
 
+[NOTE.speaker]
+--
+Mention Krzemin at OSS.
+--
 
 == Plan
 
@@ -64,7 +68,7 @@ class Test {
     int a = 1;
     int b = 2;
     int c = a + b;
-    scala.Predef$.MODULE.println(
+    scala.Predef$.MODULE$.println(
       scala.runtime.BoxRunTime.boxToInteger(c)
     );
   }
@@ -83,18 +87,20 @@ Now, lets see how bytecode would look like.
 
 [source, x86asm]
 --
-0: iconst_1
-1: istore_2
-2: iconst_2
-3: istore_3
-4: iload_2
-5: iload_3
-6: iadd
-7: istore 4
-9: getstatic #22; scala.Predef$.MODULE$ : scala.Predef$;
+ 0: iconst_1
+ 1: istore_2
+ 2: iconst_2
+ 3: istore_3
+ 4: iload_2
+ 5: iload_3
+ 6: iadd
+ 7: istore 4
+ 9: getstatic #22; scala.Predef$.MODULE$ : scala.Predef$
 12: iload 4
-14: invokestatic #28 ; scala.runtime.BoxesRunTime.boxToInteger(int): java.lang.Integer;
-17: invokevirtual #32 ; scala.Predef$.println(java.lang.Object): void
+14: invokestatic #28 ; scala.runtime.BoxesRunTime
+                     ; .boxToInteger(int): java.lang.Integer
+17: invokevirtual #32
+; scala.Predef$.println(java.lang.Object): void
 --
 
 [NOTE.speaker]
@@ -235,7 +241,7 @@ class Test {
     int b = 2;
     int c = a + b;
     // we finished here
-    scala.Predef$.MODULE.println(
+    scala.Predef$.MODULE$.println(
       scala.runtime.BoxRunTime.boxToInteger(c)
     );
   }
@@ -406,16 +412,17 @@ val value: String = head(stringNel)
 // pseudocode of what JVM sees
 
 // List can only contain java.lang.Object
-def head(list: List): java.lang.Object = ...
+def head(list: NonEmptyList): java.lang.Object = ...
 
-// stringNel forgot its type parameter so we have to retrieve it
-val value: String = headOption(stringNel).asInstanceOf[String]
+// stringNel forgot its type parameter
+val value: String = headOption(stringNel)
+    .asInstanceOf[String] // so we have to retrieve it
 --
 
 [NOTE.speaker]
 --
 Type erasure instead of reified types, they are actually useful because it allows us to implement things that Java's type system wouldn't allow.
-Drawbacks are usually addressed with `@specialize`. Exception is reflection.
+Drawbacks are usually addressed with `@specialize`. Exception is reflection which might be difficult to use with generic methods.
 --
 
 
@@ -424,24 +431,74 @@ Drawbacks are usually addressed with `@specialize`. Exception is reflection.
 
 == Threads
 
-TODO: maps directly into system threads
+[NOTE.speaker]
+--
+Natively supported since JDK 1.0, released at January 23, 1996.
+--
 
-=== synchronized, wait, notify
+=== In application
 
-TODO
+[.handle-img]
+[.rotate-img]
+image::Scala and JVM/Scala and JVM - page 22.png[]
 
 [NOTE.speaker]
 --
-blocking, mutexes
+Map to operating system threads. Are expensice to create so we should try to reuse them instead of creating them anew.
 --
 
-=== Threads pools
+=== Creating a thread
 
-TODO
+[source, scala]
+--
+// nothing interesting
+val thread = new Thread()
+thread.start()
+--
+
+[source, scala]
+--
+// passing Runnable
+val thread = new Thread(() => println("started"))
+thread.start()
+--
+
+[source, scala]
+--
+// extending Thread
+val thread = new Thread {
+  override def run(): Unit = println("started")
+}
+thread.start()
+--
 
 [NOTE.speaker]
 --
-ExecutionContext, Scheduler
+Creating threads is that simple.
+--
+
+=== Thread pools
+
+[source, scala]
+--
+// 10 threads that could run submited tasks in parallel
+val executorService = Executors.newFixedThreadPool(10)
+executorService.submit(() => println("started"))
+--
+
+[source, scala]
+--
+implicit val ec: ExecutionContext =
+    ExecutionContext.fromExecutor(executorService)
+// use in e.g. Future
+--
+
+[NOTE.speaker]
+--
+Thread pools let us reuse a thread, instead of letting it die after `Runnable` finishes.
+This is used by `Future`, `IO`, `Task`, Akka, etc to run things.
+`ExecutionContext` and `Scheduler` are just wrappers.
+Mention blocking threads, IO, and the need to handle that.
 --
 
 
@@ -452,7 +509,7 @@ ExecutionContext, Scheduler
 
 [NOTE.speaker]
 --
-If JVM was only emulator of non-existend processor it would be pretty slow. However that's not the case. How it's possible?
+If JVM was only emulator of non-existend processor it would be pretty slow. However that's not the case. How it's possible? HotSpot.
 --
 
 === Compilers
@@ -468,19 +525,76 @@ image::Scala and JVM/Scala and JVM - page 23.png[]
 
 === Examples
 
-TODO
+[%step]
+* inlining
+* loop unrooling
+* null check elimination
+* dead code elimination
+* escape analysis
+* devirtualization
+* constant folding
+* ...
 
-=== Some rules
+[NOTE.speaker]
+--
+Inlining is the mother of all optimizations.
+Devirtualization relies on knowing how many implementations are in the runtime.
+--
 
-TODO when optimization won't work
+=== Some takeaways
 
-=== TODO
+[%step]
+* JVM prefers short method (inlining and compilation)
+* JVM prefers not-too-deep call stack (ditto)
+* JVM perfers simple code (easier to optimize)
+* JVM prefers if we limit amount of implementations in the runtime (devirtualization -> inlining)
+* a lot of optimizations we would do manually is aalredy done by JVM itself, so before doing anything - learn how to benchmark
 
-TODO image from deep stack on JEE/Springś 
+[NOTE.speaker]
+--
+Deep hierarchies, refletion, Fabio Brazill's example with Map.
+--
 
+=== What to avoid
+
+[.handle-img]
+image::jtrac-callstack1.png[]
+
+source: https://ptrthomas.wordpress.com/2006/06/06/java-call-stack-from-http-upto-jdbc-as-a-picture/[Peter Thomas]
 
 
 
 // -------------------------------- Summary -----------------------------------
 
 == Summary
+
+[%step]
+* you cannot escape from JVM's idiosyncracies forever, so it's better to understand it
+* even with FP libraires sometimes knowledge about low-level stuff is important
+* if you want to be able to optimize you program, you HAVE to learn some basics
+
+=== Sources for curious
+
+[%step]
+* https://docs.oracle.com/javase/specs/index.html[Oracle's JVM specifications] (and Oracle's documentation in general)
+* Daniel Spiewak's gists about https://gist.github.com/djspiewak/46b543800958cf61af6efa8e072bfd5c[Thread Pools] and https://gist.github.com/djspiewak/464c11307cabc80171c90397d4ec34ef[Optimizing JVM]
+* Aleksey Shipilëv's https://shipilev.net/[blog]
+* Fabio Labella's presentation https://www.youtube.com/watch?v=x5_MmZVLiSM[How do Fibers Work? A Peek Under the Hood]
+* my own https://leanpub.com/jvm-scala-book[book about JVM and Scala]
+
+[NOTE.speaker]
+--
+Slides will be published online after the conference.
+--
+
+
+
+// ------------------------------- Questions? ---------------------------------
+
+== Questions?
+
+
+
+// ------------------------------- Thank you ----------------------------------
+
+== Thank you !
